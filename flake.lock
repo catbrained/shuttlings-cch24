@@ -71,7 +71,8 @@
         "crane": "crane",
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
-        "rust-overlay": "rust-overlay"
+        "rust-overlay": "rust-overlay",
+        "shuttle": "shuttle"
       }
     },
     "rust-overlay": {
@@ -92,6 +93,19 @@
         "owner": "oxalica",
         "repo": "rust-overlay",
         "type": "github"
+      }
+    },
+    "shuttle": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1,
+        "narHash": "sha256-6KZ8qbw10GvGf6wRG6VFz31lse7DVZ5riezo8Dleym8=",
+        "path": "shuttle/",
+        "type": "path"
+      },
+      "original": {
+        "path": "shuttle/",
+        "type": "path"
       }
     },
     "systems": {
