@@ -21,6 +21,7 @@ async fn seek(
 ) -> response::Result<(StatusCode, [(HeaderName, &'static str); 1])> {
     let song_url = match id {
         -1 => "https://www.youtube.com/watch?v=9Gc4QTqslN4",
+        2 => "https://www.youtube.com/watch?v=2G8LO44Ax8w",
         _ => return Err(StatusCode::NOT_FOUND.into()),
     };
 
