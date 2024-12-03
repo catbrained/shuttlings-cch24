@@ -1,5 +1,6 @@
 use std::{
     net::{Ipv4Addr, Ipv6Addr},
+    ops::BitXor,
 };
 
 use axum::{
@@ -70,13 +71,56 @@ async fn ip_get_key(getkey: Query<IpGetKey>) -> String {
     key.to_string()
 }
 
+#[derive(Debug, Deserialize)]
+struct XorIpv6(Ipv6Addr);
+
+impl BitXor for XorIpv6 {
+    type Output = Self;
+
+    fn bitxor(self, rhs: Self) -> Self::Output {
+        let lhs = self.0.octets();
+        let rhs = rhs.0.octets();
+
+        let mut result: [u8; 16] = [42; 16];
+        for (i, (lhs, rhs)) in lhs.into_iter().zip(rhs).enumerate() {
+            result[i] = lhs ^ rhs;
+        }
+
+        Self(result.into())
+    }
+}
+
+#[derive(Deserialize)]
+struct Ip6Dec {
+    from: XorIpv6,
+    key: XorIpv6,
+}
+
+async fn ip6_decrypt(ipdec: Query<Ip6Dec>) -> String {
+    let ipdec = ipdec.0;
+    (ipdec.from ^ ipdec.key).0.to_string()
+}
+
+#[derive(Deserialize)]
+struct Ip6GetKey {
+    from: XorIpv6,
+    to: XorIpv6,
+}
+
+async fn ip6_get_key(getkey: Query<Ip6GetKey>) -> String {
+    let getkey = getkey.0;
+    (getkey.from ^ getkey.to).0.to_string()
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
         .route("/", get(hello_world))
         .route("/:id/seek", get(seek))
         .route("/2/dest", get(ip_decrypt))
-        .route("/2/key", get(ip_get_key));
+        .route("/2/key", get(ip_get_key))
+        .route("/2/v6/dest", get(ip6_decrypt))
+        .route("/2/v6/key", get(ip6_get_key));
 
     Ok(router.into())
 }
