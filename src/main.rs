@@ -6,7 +6,7 @@ use std::{
 use axum::{
     body::Bytes,
     extract::{Path, Query},
-    http::{header, HeaderName, StatusCode},
+    http::{header, HeaderMap, HeaderName, StatusCode},
     response,
     routing::{get, post},
     Router,
@@ -127,10 +127,40 @@ struct Order {
     quantity: u32,
 }
 
-async fn manifest(body: Bytes) -> response::Result<String> {
-    let Ok(manifest): Result<Manifest, _> = Manifest::from_slice(&body) else {
-        return Err((StatusCode::BAD_REQUEST, "Invalid manifest").into());
+async fn manifest(headers: HeaderMap, body: Bytes) -> response::Result<String> {
+    let content_type = headers
+        .get("Content-Type")
+        .ok_or(StatusCode::UNSUPPORTED_MEDIA_TYPE)?
+        .to_str()
+        .or(Err(StatusCode::UNSUPPORTED_MEDIA_TYPE))?;
+
+    let manifest = match content_type {
+        "application/toml" => {
+            let Ok(manifest): Result<Manifest, _> = Manifest::from_slice(&body) else {
+                return Err((StatusCode::BAD_REQUEST, "Invalid manifest").into());
+            };
+
+            manifest
+        }
+        "application/json" => {
+            let Ok(manifest) = serde_json::from_slice(&body) else {
+                return Err((StatusCode::BAD_REQUEST, "Invalid manifest").into());
+            };
+
+            manifest
+        }
+        "application/yaml" => {
+            let Ok(manifest) = serde_yaml::from_slice(&body) else {
+                return Err((StatusCode::BAD_REQUEST, "Invalid manifest").into());
+            };
+
+            manifest
+        }
+        _ => {
+            return Err(StatusCode::UNSUPPORTED_MEDIA_TYPE.into());
+        }
     };
+
     let package = manifest.package.ok_or(StatusCode::NO_CONTENT)?;
     let cargo_manifest::MaybeInherited::Local(keywords) = package
         .keywords
