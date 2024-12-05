@@ -4,14 +4,15 @@ use std::{
 };
 
 use axum::{
+    body::Bytes,
     extract::{Path, Query},
     http::{header, HeaderName, StatusCode},
     response,
     routing::{get, post},
     Router,
 };
+use cargo_manifest::Manifest;
 use serde::Deserialize;
-use toml::{value, Table};
 
 async fn hello_world() -> &'static str {
     "Hello, bird!"
@@ -116,16 +117,6 @@ async fn ip6_get_key(getkey: Query<Ip6GetKey>) -> String {
 }
 
 #[derive(Deserialize)]
-struct Manifest {
-    package: Package,
-}
-
-#[derive(Deserialize)]
-struct Package {
-    metadata: Metadata,
-}
-
-#[derive(Deserialize)]
 struct Metadata {
     orders: Vec<Order>,
 }
@@ -136,11 +127,24 @@ struct Order {
     quantity: u32,
 }
 
-async fn manifest(body: String) -> Result<String, StatusCode> {
-    let Ok(manifest): Result<Manifest, _> = toml::from_str(&body) else {
-        return Err(StatusCode::NO_CONTENT);
+async fn manifest(body: Bytes) -> response::Result<String> {
+    let Ok(manifest): Result<Manifest, _> = Manifest::from_slice(&body) else {
+        return Err((StatusCode::BAD_REQUEST, "Invalid manifest").into());
     };
-    let orders = manifest.package.metadata.orders;
+
+    let orders = manifest
+        .package
+        .ok_or(StatusCode::NO_CONTENT)?
+        .metadata
+        .ok_or(StatusCode::NO_CONTENT)?
+        .try_into::<Metadata>()
+        .or(Err(StatusCode::NO_CONTENT))?
+        .orders;
+
+    if orders.is_empty() {
+        return Err(StatusCode::NO_CONTENT.into());
+    }
+
     let mut result = String::new();
     for order in orders {
         result.push_str(&format!("{}: {}\n", order.item, order.quantity))
