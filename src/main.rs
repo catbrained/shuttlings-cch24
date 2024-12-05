@@ -131,10 +131,18 @@ async fn manifest(body: Bytes) -> response::Result<String> {
     let Ok(manifest): Result<Manifest, _> = Manifest::from_slice(&body) else {
         return Err((StatusCode::BAD_REQUEST, "Invalid manifest").into());
     };
+    let package = manifest.package.ok_or(StatusCode::NO_CONTENT)?;
+    let cargo_manifest::MaybeInherited::Local(keywords) = package
+        .keywords
+        .ok_or((StatusCode::BAD_REQUEST, "Magic keyword not provided"))?
+    else {
+        return Err((StatusCode::BAD_REQUEST, "Magic keyword not provided").into());
+    };
+    if !keywords.contains(&"Christmas 2024".to_owned()) {
+        return Err((StatusCode::BAD_REQUEST, "Magic keyword not provided").into());
+    }
 
-    let orders = manifest
-        .package
-        .ok_or(StatusCode::NO_CONTENT)?
+    let orders = package
         .metadata
         .ok_or(StatusCode::NO_CONTENT)?
         .try_into::<Metadata>()
