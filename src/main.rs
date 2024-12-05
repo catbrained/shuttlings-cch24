@@ -13,6 +13,8 @@ use axum::{
 };
 use cargo_manifest::Manifest;
 use serde::Deserialize;
+use tracing::{event, Level};
+use tracing_subscriber::FmtSubscriber;
 
 async fn hello_world() -> &'static str {
     "Hello, bird!"
@@ -128,6 +130,12 @@ struct Order {
 }
 
 async fn manifest(headers: HeaderMap, body: Bytes) -> response::Result<String> {
+    event!(
+        Level::DEBUG,
+        "Request body: {}",
+        String::from_utf8(body.clone().into()).unwrap()
+    );
+
     let content_type = headers
         .get("Content-Type")
         .ok_or(StatusCode::UNSUPPORTED_MEDIA_TYPE)?
@@ -194,6 +202,11 @@ async fn manifest(headers: HeaderMap, body: Bytes) -> response::Result<String> {
 
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::DEBUG)
+        .finish();
+    tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
+
     let router = Router::new()
         .route("/", get(hello_world))
         .route("/:id/seek", get(seek))
