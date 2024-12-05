@@ -7,10 +7,11 @@ use axum::{
     extract::{Path, Query},
     http::{header, HeaderName, StatusCode},
     response,
-    routing::get,
+    routing::{get, post},
     Router,
 };
 use serde::Deserialize;
+use toml::{value, Table};
 
 async fn hello_world() -> &'static str {
     "Hello, bird!"
@@ -114,6 +115,41 @@ async fn ip6_get_key(getkey: Query<Ip6GetKey>) -> String {
     (getkey.from ^ getkey.to).0.to_string()
 }
 
+#[derive(Deserialize)]
+struct Manifest {
+    package: Package,
+}
+
+#[derive(Deserialize)]
+struct Package {
+    metadata: Metadata,
+}
+
+#[derive(Deserialize)]
+struct Metadata {
+    orders: Vec<Order>,
+}
+
+#[derive(Deserialize)]
+struct Order {
+    item: String,
+    quantity: u32,
+}
+
+async fn manifest(body: String) -> Result<String, StatusCode> {
+    let Ok(manifest): Result<Manifest, _> = toml::from_str(&body) else {
+        return Err(StatusCode::NO_CONTENT);
+    };
+    let orders = manifest.package.metadata.orders;
+    let mut result = String::new();
+    for order in orders {
+        result.push_str(&format!("{}: {}\n", order.item, order.quantity))
+    }
+    let result = result.trim_end();
+
+    Ok(result.to_owned())
+}
+
 #[shuttle_runtime::main]
 async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
@@ -122,7 +158,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .route("/2/dest", get(ip_decrypt))
         .route("/2/key", get(ip_get_key))
         .route("/2/v6/dest", get(ip6_decrypt))
-        .route("/2/v6/key", get(ip6_get_key));
+        .route("/2/v6/key", get(ip6_get_key))
+        .route("/5/manifest", post(manifest));
 
     Ok(router.into())
 }
