@@ -118,12 +118,7 @@ async fn ip6_get_key(getkey: Query<Ip6GetKey>) -> String {
     (getkey.from ^ getkey.to).0.to_string()
 }
 
-#[derive(Deserialize)]
-struct Metadata {
-    orders: Vec<Order>,
-}
-
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Order {
     item: String,
     quantity: u32,
@@ -180,22 +175,26 @@ async fn manifest(headers: HeaderMap, body: Bytes) -> response::Result<String> {
         return Err((StatusCode::BAD_REQUEST, "Magic keyword not provided").into());
     }
 
-    let orders = package
+    let mut result = String::new();
+    package
         .metadata
         .ok_or(StatusCode::NO_CONTENT)?
-        .try_into::<Metadata>()
-        .or(Err(StatusCode::NO_CONTENT))?
-        .orders;
+        .get("orders")
+        .ok_or(StatusCode::NO_CONTENT)?
+        .as_array()
+        .ok_or(StatusCode::NO_CONTENT)?
+        .iter()
+        .filter_map(|v| {
+            let order: Option<Order> = v.clone().try_into().ok();
+            order
+        })
+        .for_each(|o| result.push_str(&format!("{}: {}\n", o.item, o.quantity)));
 
-    if orders.is_empty() {
+    let result = result.trim_end();
+
+    if result.is_empty() {
         return Err(StatusCode::NO_CONTENT.into());
     }
-
-    let mut result = String::new();
-    for order in orders {
-        result.push_str(&format!("{}: {}\n", order.item, order.quantity))
-    }
-    let result = result.trim_end();
 
     Ok(result.to_owned())
 }
