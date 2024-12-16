@@ -5,6 +5,7 @@ use axum::{
     Json, Router,
 };
 use jsonwebtoken as jwt;
+use jsonwebtoken::errors::ErrorKind as JwtErrorKind;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -12,6 +13,7 @@ pub fn day_sixteen() -> Router {
     Router::new()
         .route("/16/wrap", post(wrap))
         .route("/16/unwrap", get(unwrap))
+        .route("/16/decode", post(decode))
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -60,4 +62,27 @@ async fn unwrap(headers: HeaderMap) -> response::Result<Json<Value>> {
     .map_err(|_| StatusCode::BAD_REQUEST)?;
 
     Ok(Json(token.claims.0))
+}
+
+async fn decode(jwt: String) -> response::Result<Json<Value>> {
+    let pubkey = include_bytes!("../day16_santa_public_key.pem");
+
+    let header = jwt::decode_header(&jwt).map_err(|_| StatusCode::BAD_REQUEST)?;
+
+    let mut validation = jwt::Validation::new(header.alg);
+    validation.validate_exp = false;
+    validation.required_spec_claims.clear();
+
+    let claims = jwt::decode::<Claims>(
+        &jwt,
+        &jwt::DecodingKey::from_rsa_pem(pubkey).expect("RSA public key should be valid"),
+        &validation,
+    )
+    .map_err(|e| match e.kind() {
+        JwtErrorKind::InvalidSignature => StatusCode::UNAUTHORIZED,
+        _ => StatusCode::BAD_REQUEST,
+    })?
+    .claims;
+
+    Ok(Json(claims.0))
 }
