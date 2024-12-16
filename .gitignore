@@ -3,3 +3,6 @@ result*
 .direnv
 .shuttle*
 Secrets*.toml
+.crates.toml
+.crates2.json
+bin/
