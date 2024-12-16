@@ -2,8 +2,9 @@ use axum::Router;
 use tracing::Level;
 use tracing_subscriber::FmtSubscriber;
 
-use crate::{day_2::day_two, day_5::day_five, day_minus_1::day_minus_one};
+use crate::{day_16::day_sixteen, day_2::day_two, day_5::day_five, day_minus_1::day_minus_one};
 
+mod day_16;
 mod day_2;
 mod day_5;
 mod day_minus_1;
@@ -18,7 +19,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
     let router = Router::new()
         .merge(day_minus_one())
         .merge(day_two())
-        .merge(day_five());
+        .merge(day_five())
+        .merge(day_sixteen());
 
     Ok(router.into())
 }
