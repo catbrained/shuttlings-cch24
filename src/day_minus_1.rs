@@ -24,6 +24,7 @@ async fn seek(
         2 => "https://www.youtube.com/watch?v=2G8LO44Ax8w",  // Thomas Vent - West 64
         5 => "https://www.youtube.com/watch?v=M1F5_UzwiY4",  // Masayoshi Takanaka - BREEZIN'
         9 => "https://www.youtube.com/watch?v=P1FsnwYJ3p0",  // Dire Straits - On Every Street
+        12 => "https://www.youtube.com/watch?v=dulMq9oddOs", // Kraja & Mats Öberg (Singing ice) - Dagen är kommen
         16 => "https://www.youtube.com/watch?v=hC8CH0Z3L54", // FKJ & Masego - Tadow
         _ => return Err(StatusCode::NOT_FOUND.into()),
     };
