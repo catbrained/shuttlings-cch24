@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 use tokio::time::Duration;
 
 static GALLONS_PER_LITER: f32 = 0.264172;
+static PINTS_PER_LITRE: f32 = 1.759754;
 
 pub fn day_nine() -> Router {
     let bucket = Arc::new(
@@ -36,6 +37,8 @@ struct BucketState(Arc<RateLimiter>);
 enum MilkRequest {
     Liters(f32),
     Gallons(f32),
+    Litres(f32),
+    Pints(f32),
 }
 
 impl MilkRequest {
@@ -43,6 +46,8 @@ impl MilkRequest {
         match self {
             MilkRequest::Liters(l) => Self::Gallons(l * GALLONS_PER_LITER),
             MilkRequest::Gallons(g) => Self::Liters(g / GALLONS_PER_LITER),
+            MilkRequest::Litres(l) => Self::Pints(l * PINTS_PER_LITRE),
+            MilkRequest::Pints(p) => Self::Litres(p / PINTS_PER_LITRE),
         }
     }
 }
