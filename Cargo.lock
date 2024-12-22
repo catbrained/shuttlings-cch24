@@ -1697,6 +1697,7 @@ dependencies = [
  "cargo-manifest",
  "jsonwebtoken",
  "leaky-bucket",
+ "rand",
  "serde",
  "serde_json",
  "serde_yaml",

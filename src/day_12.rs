@@ -9,20 +9,28 @@ use axum::{
     routing::{get, post},
     Router,
 };
+use rand::{rngs::StdRng, Rng, SeedableRng};
 use tokio::sync::RwLock;
 
 pub fn day_twelve() -> Router {
-    let state = AppState(Arc::new(RwLock::new(Game::default())));
+    let state = AppState {
+        game: Arc::new(RwLock::new(Game::default())),
+        rng: Arc::new(RwLock::new(StdRng::seed_from_u64(2024))),
+    };
 
     Router::new()
         .route("/12/board", get(board))
         .route("/12/reset", post(reset))
         .route("/12/place/:team/:column", post(place))
+        .route("/12/random-board", get(random_board))
         .with_state(state)
 }
 
 #[derive(Clone)]
-struct AppState(Arc<RwLock<Game>>);
+struct AppState {
+    game: Arc<RwLock<Game>>,
+    rng: Arc<RwLock<StdRng>>,
+}
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 enum Tile {
@@ -194,15 +202,37 @@ impl Game {
 
         GameStatus::InProgress
     }
+
+    fn random(rng: &mut StdRng) -> Self {
+        let mut board = [Tile::Empty; 4 * 4];
+
+        for tile in board.iter_mut() {
+            if rng.gen::<bool>() {
+                *tile = Tile::Cookie;
+            } else {
+                *tile = Tile::Milk;
+            }
+        }
+
+        let mut game = Self {
+            board,
+            status: GameStatus::InProgress,
+        };
+        game.update_status();
+
+        game
+    }
 }
 
 async fn board(State(state): State<AppState>) -> (StatusCode, String) {
-    (StatusCode::OK, state.0.read().await.to_string())
+    (StatusCode::OK, state.game.read().await.to_string())
 }
 
 async fn reset(State(state): State<AppState>) -> (StatusCode, String) {
-    let mut board = state.0.write().await;
+    let mut board = state.game.write().await;
     *board = Game::default();
+    let mut rng = state.rng.write().await;
+    *rng = StdRng::seed_from_u64(2024);
 
     (StatusCode::OK, board.to_string())
 }
@@ -218,7 +248,7 @@ async fn place(
         return (StatusCode::BAD_REQUEST, "".to_owned());
     }
 
-    let mut game = state.0.write().await;
+    let mut game = state.game.write().await;
 
     if game.board[col - 1] != Tile::Empty {
         return (StatusCode::SERVICE_UNAVAILABLE, format!("{game}"));
@@ -249,4 +279,13 @@ async fn place(
     game.update_status();
 
     (StatusCode::OK, format!("{game}"))
+}
+
+async fn random_board(State(state): State<AppState>) -> String {
+    let mut game = state.game.write().await;
+    let mut rng = state.rng.write().await;
+
+    *game = Game::random(&mut rng);
+
+    format!("{game}")
 }
