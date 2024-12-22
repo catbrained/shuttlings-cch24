@@ -136,6 +136,7 @@
           # Extra inputs can be added here; cargo and rustc are provided by default.
           packages = [
             (pkgs.callPackage shuttle { })
+            pkgs.sqlx-cli
           ];
         };
       });
