@@ -19,14 +19,9 @@
       url = "github:rustsec/advisory-db";
       flake = false;
     };
-
-    shuttle = {
-      url = "path:shuttle/";
-      flake = false;
-    };
   };
 
-  outputs = { self, nixpkgs, crane, rust-overlay, flake-utils, advisory-db, shuttle, ... }:
+  outputs = { self, nixpkgs, crane, rust-overlay, flake-utils, advisory-db, ... }:
     flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
@@ -135,7 +130,7 @@
 
           # Extra inputs can be added here; cargo and rustc are provided by default.
           packages = [
-            (pkgs.callPackage shuttle { })
+            pkgs.cargo-shuttle
             pkgs.sqlx-cli
           ];
         };
