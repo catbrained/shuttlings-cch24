@@ -1,25 +1,35 @@
 use axum::Router;
-use tracing::Level;
-use tracing_subscriber::FmtSubscriber;
+use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 use crate::{
-    day_12::day_twelve, day_16::day_sixteen, day_2::day_two, day_5::day_five, day_9::day_nine,
-    day_minus_1::day_minus_one,
+    day_12::day_twelve, day_16::day_sixteen, day_19::day_nineteen, day_2::day_two, day_5::day_five,
+    day_9::day_nine, day_minus_1::day_minus_one,
 };
 
 mod day_12;
 mod day_16;
+mod day_19;
 mod day_2;
 mod day_5;
 mod day_9;
 mod day_minus_1;
 
 #[shuttle_runtime::main]
-async fn main() -> shuttle_axum::ShuttleAxum {
+async fn main(
+    #[shuttle_shared_db::Postgres(
+        local_uri = "postgres://postgres:password@localhost:5432/postgres"
+    )]
+    pool: sqlx::PgPool,
+) -> shuttle_axum::ShuttleAxum {
     let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::DEBUG)
+        .with_env_filter(EnvFilter::from_default_env())
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
+
+    sqlx::migrate!()
+        .run(&pool)
+        .await
+        .expect("Database migration failed");
 
     let router = Router::new()
         .merge(day_minus_one())
@@ -27,7 +37,8 @@ async fn main() -> shuttle_axum::ShuttleAxum {
         .merge(day_five())
         .merge(day_nine())
         .merge(day_twelve())
-        .merge(day_sixteen());
+        .merge(day_sixteen())
+        .merge(day_nineteen(pool));
 
     Ok(router.into())
 }
