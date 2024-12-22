@@ -1,5 +1,5 @@
 use axum::Router;
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
+use tracing_subscriber::EnvFilter;
 
 use crate::{
     day_12::day_twelve, day_16::day_sixteen, day_19::day_nineteen, day_2::day_two, day_5::day_five,
@@ -21,7 +21,7 @@ async fn main(
     )]
     pool: sqlx::PgPool,
 ) -> shuttle_axum::ShuttleAxum {
-    let subscriber = FmtSubscriber::builder()
+    let subscriber = tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .finish();
     tracing::subscriber::set_global_default(subscriber).expect("Setting default subscriber failed");
