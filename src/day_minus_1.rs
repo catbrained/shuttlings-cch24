@@ -27,6 +27,7 @@ async fn seek(
         12 => "https://www.youtube.com/watch?v=dulMq9oddOs", // Kraja & Mats Öberg (Singing ice) - Dagen är kommen
         16 => "https://www.youtube.com/watch?v=hC8CH0Z3L54", // FKJ & Masego - Tadow
         19 => "https://www.youtube.com/watch?v=RqjXn2NflqU", // Fleetwood Mac - You Make Loving Fun (2004 Remaster)
+        23 => "https://www.youtube.com/watch?v=zzzunYn6sUU", // TOKYO MACHINE X MDK - DECK THE HALLS [CHOMPO RELEASE]
         _ => return Err(StatusCode::NOT_FOUND.into()),
     };
 
