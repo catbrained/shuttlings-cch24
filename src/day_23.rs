@@ -6,6 +6,7 @@ pub fn day_twentythree() -> Router {
         .nest_service("/assets", ServeDir::new("assets"))
         .route("/23/star", get(star))
         .route("/23/present/:color", get(present))
+        .route("/23/ornament/:state/:n", get(ornament))
 }
 
 async fn star() -> String {
@@ -31,4 +32,18 @@ async fn present(Path(color): Path<String>) -> Result<String> {
     );
 
     Ok(present)
+}
+
+async fn ornament(Path((state, n)): Path<(String, String)>) -> Result<String> {
+    let (on, next_state) = match state.as_str() {
+        "on" => (" on", "off"),
+        "off" => ("", "on"),
+        _ => return Err(StatusCode::IM_A_TEAPOT.into()),
+    };
+
+    let ornament = format!(
+        r#"<div class="ornament{on}" id="ornament{n}" hx-trigger="load delay:2s once" hx-get="/23/ornament/{next_state}/{n}" hx-swap="outerHTML"></div>"#
+    );
+
+    Ok(ornament)
 }
