@@ -14,6 +14,8 @@ async fn star() -> String {
 }
 
 async fn present(Path(color): Path<String>) -> Result<String> {
+    let color = escape_html(&color);
+
     let next_color = match color.as_str() {
         "red" => "blue",
         "blue" => "purple",
@@ -35,6 +37,8 @@ async fn present(Path(color): Path<String>) -> Result<String> {
 }
 
 async fn ornament(Path((state, n)): Path<(String, String)>) -> Result<String> {
+    let (state, n) = (escape_html(&state), escape_html(&n));
+
     let (on, next_state) = match state.as_str() {
         "on" => (" on", "off"),
         "off" => ("", "on"),
@@ -46,4 +50,21 @@ async fn ornament(Path((state, n)): Path<(String, String)>) -> Result<String> {
     );
 
     Ok(ornament)
+}
+
+fn escape_html(input: &str) -> String {
+    let mut output = String::with_capacity(input.len() * 2);
+    for c in input.chars() {
+        match c {
+            '&' => output.push_str("&amp;"),
+            '<' => output.push_str("&lt;"),
+            '>' => output.push_str("&gt;"),
+            '"' => output.push_str("&quot;"),
+            '\'' => output.push_str("&#x27;"),
+            '/' => output.push_str("&#x2F;"),
+            _ => output.push(c),
+        }
+    }
+
+    output
 }
