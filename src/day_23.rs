@@ -106,25 +106,17 @@ async fn lockfile(mut multipart: Multipart) -> Result<String> {
 
     for checksum in checksums {
         let checksum = checksum.as_str().ok_or(StatusCode::BAD_REQUEST)?;
-        if !checksum.chars().all(|c| c.is_ascii_hexdigit()) {
+        if !checksum.chars().all(|c| c.is_ascii_hexdigit()) || checksum.chars().count() < 10 {
             return Err(StatusCode::UNPROCESSABLE_ENTITY.into());
         }
 
-        let color = checksum.get(0..6).ok_or(StatusCode::UNPROCESSABLE_ENTITY)?;
+        let color = &checksum[0..6];
 
-        let top = u16::from_str_radix(
-            checksum.get(6..8).ok_or(StatusCode::UNPROCESSABLE_ENTITY)?,
-            16,
-        )
-        .map_err(|_| StatusCode::UNPROCESSABLE_ENTITY)?;
+        let top = u16::from_str_radix(&checksum[6..8], 16)
+            .expect("checksum should be all valid hexdigits");
 
-        let left = u16::from_str_radix(
-            checksum
-                .get(8..10)
-                .ok_or(StatusCode::UNPROCESSABLE_ENTITY)?,
-            16,
-        )
-        .map_err(|_| StatusCode::UNPROCESSABLE_ENTITY)?;
+        let left = u16::from_str_radix(&checksum[8..10], 16)
+            .expect("checksum should be all valid hexdigits");
 
         writeln!(
             output,
